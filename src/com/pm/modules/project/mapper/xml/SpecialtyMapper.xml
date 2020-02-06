@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.pm.modules.project.mapper.SpecialtyMapper">
+    
+	<sql id="specialtyColumns">
+		a.id AS "id",
+		a.name AS "name",
+		a.sort AS "sort",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		a.colNum  AS "colNum",
+		user.name AS "user.name"
+	</sql>
+	
+	<sql id="specialtyJoins">
+		left join sys_user user on user.id = a.create_by
+	</sql>
+	
+    
+	<select id="get" resultType="Specialty" >
+		SELECT 
+			<include refid="specialtyColumns"/>
+		FROM pm_specialty a
+		<include refid="specialtyJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	
+	
+		<select id="findPagedataList" resultType="Specialty" >
+		SELECT 
+			a.id AS "id",
+		a.name AS "name",
+		a.sort AS "sort",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		a.colNum  AS "colNum"
+		FROM pm_specialty a  where   a.del_flag = #{DEL_FLAG_NORMAL} and a.id  in 
+		(select  DISTINCT(spec_id) from pm_specialty_user where user_id=#{userSpecialtyId} and pro_id=#{remarks})
+			<if test="name != null and name != ''">
+				AND a.name LIKE 
+					<if test="dbName == 'oracle'">'%'||#{name}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{name}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{name},'%')</if>
+			</if>
+				ORDER BY a.sort
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	<select id="findList" resultType="Specialty" >
+		SELECT 
+			<include refid="specialtyColumns"/>
+		FROM pm_specialty a
+		<include refid="specialtyJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+			<if test="name != null and name != ''">
+				AND a.name LIKE 
+					<if test="dbName == 'oracle'">'%'||#{name}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{name}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{name},'%')</if>
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.sort
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="Specialty" >
+		SELECT 
+			<include refid="specialtyColumns"/>
+		FROM pm_specialty a
+		<include refid="specialtyJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.sort
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO pm_specialty(
+			id,
+			name,
+			sort,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag,
+			colNum
+		) VALUES (
+			#{id},
+			#{name},
+			#{sort},
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{remarks},
+			#{delFlag},
+			#{colNum}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE pm_specialty SET 	
+			name = #{name},
+			sort = #{sort},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM pm_specialty
+		WHERE id = #{id}
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE pm_specialty SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="Specialty" statementType="STATEMENT">
+		select * FROM pm_specialty  where ${propertyName} = '${value}'
+	</select>
+	
+	<!-- 判断是否重复的排序 -->
+	<select id="findSort" parameterType="String" resultType="Integer">
+		select count(*) from pm_specialty where sort = #{sort} and del_flag = '0'
+	</select>
+	
+	
+	<!-- 查询已经存在的专业数值 -->
+	<select id="getAlreadyColNum"  resultType="Integer">
+		select colNum from pm_specialty where  del_flag = '0'
+	</select>
+	
+	
+	<select id="getRunningSpecUser" resultType="SpecialtyUser" >
+		SELECT 
+			a.id AS "id",
+		a.pro_id AS "proId",
+		a.spec_id AS "specId",
+		a.user_id AS "userId",
+		user.name AS "userName"
+		FROM pm_specialty_user a
+		LEFT JOIN sys_user user ON user.id = a.user_id
+		LEFT JOIN pm_project  pro on  a.pro_id=a.pro_id
+		where 	a.del_flag = '0' and pro.del_flag='0'  and  pro.state !='5'
+		
+	
+	</select>
+	
+		
+	
+	<select id="getProUser" resultType="String" >
+	select  DISTINCT(user_id)  from pm_specialty_user  where pro_id=#{proId}   and del_flag='0'
+	</select>
+	
+	
+	
+</mapper>

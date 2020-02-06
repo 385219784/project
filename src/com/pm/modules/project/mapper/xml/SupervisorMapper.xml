@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.pm.modules.project.mapper.SupervisorMapper">
+    
+	<sql id="supervisorColumns">
+		a.id AS "id",
+		a.user_id AS "userId",
+		a.pro_id AS "proId",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+				
+		user.name AS "user.name",
+		user.phone AS "user.phone",
+		user.mobile AS "user.mobile"
+	</sql>
+	
+	<sql id="supervisorJoins">
+		
+		LEFT JOIN sys_user user ON user.id = a.user_id
+	</sql>
+	
+    
+	<select id="get" resultType="Supervisor" >
+		SELECT 
+			<include refid="supervisorColumns"/>
+		FROM pm_supervisor a
+		<include refid="supervisorJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="Supervisor" >
+		SELECT 
+			<include refid="supervisorColumns"/>
+		FROM pm_supervisor a
+		<include refid="supervisorJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+			<if test="proId != null and proId != ''">
+				AND a.pro_id = #{proId}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.create_date ASC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="Supervisor" >
+		SELECT 
+			<include refid="supervisorColumns"/>
+		FROM pm_supervisor a
+		<include refid="supervisorJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.create_date ASC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO pm_supervisor(
+			id,
+			user_id,
+			pro_id,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+		) VALUES (
+			#{id},
+			#{userId},
+			#{proId},
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE pm_supervisor SET 	
+			user_id = #{user.id},
+			pro_id = #{proId},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM pm_supervisor where pro_id = #{proId}
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE pm_supervisor SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		 where pro_id = #{proId}
+	</update>
+	
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="Supervisor" statementType="STATEMENT">
+		select * FROM pm_supervisor  where ${propertyName} = '${value}'
+	</select>
+	
+	<!-- 查找项目主管 -->
+	<select id="getUsers" parameterType="String" resultType="String" >
+		SELECT 
+			group_concat(user.name)
+		FROM pm_supervisor a
+		left join sys_user user on user.id = a.user_id
+		WHERE a.pro_id = #{projectId}
+		order by user.sort
+	</select>
+	
+	<!-- 查找项目负责人 -->
+	<select id="getPrincipal" parameterType="String" resultType="String" >
+		SELECT 
+			group_concat(user.name)
+		FROM pm_principal a
+		left join sys_user user on user.id = a.user_id
+		WHERE a.pro_id = #{proId}
+		order by user.sort
+	</select>
+	
+	<!-- 添加项目负责人 -->
+	<insert id="insertPrincipal">
+		INSERT INTO pm_principal(
+			id,
+			user_id,
+			pro_id,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+		) VALUES (
+			#{id},
+			#{userId},
+			#{proId},
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+	
+	<!--删除项目负责人-->
+	<delete id="deletePrincipal" parameterType="String">
+		DELETE FROM pm_principal where pro_id = #{proId}
+	</delete>
+	
+	<!--删除项目负责人-->
+	<update id="deletePrincipalUser" parameterType="String">
+		update pm_principal set del_flag = '1' where pro_id = #{proId}
+	</update>
+</mapper>

@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<template>
+	<name>viewList</name>
+	<filePath>src/main/webapp/webpage/${lastPackageName}/${moduleName}/${subModuleName}</filePath>
+	<fileName>${className}List.jsp</fileName>
+	<content><![CDATA[
+<%@ page contentType="text/html;charset=UTF-8" %>
+<%@ include file="/webpage/include/taglib.jsp"%>
+<html>
+<head>
+	<title>${functionNameSimple}管理</title>
+	<meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<meta name="decorator" content="ani"/>
+	<%@ include file="/webpage/include/bootstraptable.jsp"%>
+	<%@include file="/webpage/include/treeview.jsp" %>
+	<%@include file="${className}List.js" %>
+</head>
+<body>
+	<div class="wrapper wrapper-content">
+	<div class="panel panel-primary">
+	<div class="panel-heading">
+		<h3 class="panel-title">${functionNameSimple}列表</h3>
+	</div>
+	<div class="panel-body">
+		<sys:message content="${r"${message}"}"/>
+	
+	<!-- 搜索 -->
+	<div class="accordion-group">
+	<div id="collapseTwo" class="accordion-body collapse">
+		<div class="accordion-inner">
+			<form:form id="searchForm" modelAttribute="${className}" class="form form-horizontal well clearfix">
+		<#list table.columnList as c>
+			<#if c.isQuery?? && c.isQuery == "1">
+			 <div class="col-xs-12 col-sm-6 col-md-4">
+			<#if c.showType == "input" || c.showType == "textarea">
+				<label class="label-item single-overflow pull-left" title="${c.comments}：">${c.comments}：</label>
+				<form:input path="${c.javaFieldId}" htmlEscape="false"<#if c.dataLength != "0"> maxlength="${c.dataLength}"</#if>  class=" form-control"/>
+			<#elseif c.showType == "select">
+				<label class="label-item single-overflow pull-left" title="${c.comments}：">${c.comments}：</label>
+				<form:select path="${c.javaFieldId}"  class="form-control m-b">
+					<form:option value="" label=""/>
+					<form:options items="${"$"}{fns:getDictList('${c.dictType}')}" itemLabel="label" itemValue="value" htmlEscape="false"/>
+				</form:select>
+			<#elseif c.showType == "checkbox">
+			  	<div class="form-group">
+					<label class="label-item single-overflow pull-left" title="${c.comments}：">&nbsp;${c.comments}：</label>
+					<div class="col-xs-12">
+						<form:checkboxes class="i-checks" path="${c.javaFieldId}" items="${"$"}{fns:getDictList('${c.dictType}')}" itemLabel="label" itemValue="value" htmlEscape="false"/>
+					</div>
+				</div>
+			<#elseif c.showType == "radiobox">
+				<div class="form-group">
+					<label class="label-item single-overflow pull-left" title="${c.comments}：">&nbsp;${c.comments}：</label>
+					<div class="col-xs-12">
+						<form:radiobuttons class="i-checks" path="${c.javaFieldId}" items="${"$"}{fns:getDictList('${c.dictType}')}" itemLabel="label" itemValue="value" htmlEscape="false"/>
+					</div>
+				</div>
+			<#elseif c.showType == "dateselect" && c.queryType == "between">
+				 <div class="form-group">
+					<label class="label-item single-overflow pull-left" title="${c.comments}：">&nbsp;${c.comments}：</label>
+					<div class="col-xs-12">
+						   <div class="col-xs-12 col-sm-5">
+					        	  <div class='input-group date' id='begin${c.simpleJavaField?cap_first}' style="left: -10px;" >
+					                   <input type='text'  name="begin${c.simpleJavaField?cap_first}" class="form-control"  />
+					                   <span class="input-group-addon">
+					                       <span class="glyphicon glyphicon-calendar"></span>
+					                   </span>
+					             </div>	
+					        </div>
+					        <div class="col-xs-12 col-sm-1">
+					        		~
+					       	</div>
+					        <div class="col-xs-12 col-sm-5">
+					          	<div class='input-group date' id='end${c.simpleJavaField?cap_first}' style="left: -10px;" >
+					                   <input type='text'  name="end${c.simpleJavaField?cap_first}" class="form-control" />
+					                   <span class="input-group-addon">
+					                       <span class="glyphicon glyphicon-calendar"></span>
+					                   </span>
+					           	</div>	
+					        </div>
+					</div>
+				</div>
+			<#elseif c.showType == "dateselect">
+				<div class="form-group">
+					<label class="label-item single-overflow pull-left" title="${c.comments}：">&nbsp;${c.comments}：</label>
+					<div class="col-xs-12">
+						<div class='input-group date' id='${c.javaFieldId}' >
+			                   <input type='text'  name="${c.javaFieldId}" class="form-control"  />
+			                   <span class="input-group-addon">
+			                       <span class="glyphicon glyphicon-calendar"></span>
+			                   </span>
+			            </div>	
+					</div>
+				</div>
+			<#elseif c.showType == "userselect">
+				<label class="label-item single-overflow pull-left" title="${c.comments}：">${c.comments}：</label>
+				<sys:userselect id="${c.simpleJavaField}" name="${c.javaFieldId}" value="${"$"}{${className}.${c.javaFieldId}}" labelName="${c.javaFieldName}" labelValue="${"$"}{${className}.${c.javaFieldName}}"
+							    cssClass="form-control <#if c.isNull != "1">required</#if>"/>
+			<#elseif c.showType == "officeselect">
+				<label class="label-item single-overflow pull-left" title="${c.comments}：">${c.comments}：</label>
+				<sys:treeselect id="${c.simpleJavaField}" name="${c.javaFieldId}" value="${"$"}{${className}.${c.javaFieldId}}" labelName="${c.javaFieldName}" labelValue="${"$"}{${className}.${c.javaFieldName}}"
+					title="部门" url="/sys/office/treeData?type=2" cssClass="form-control" allowClear="true" notAllowSelectParent="true"/>
+			<#elseif c.showType == "areaselect">
+				<label class="label-item single-overflow pull-left" title="${c.comments}：">${c.comments}：</label>
+				<sys:treeselect id="${c.simpleJavaField}" name="${c.javaFieldId}" value="${"$"}{${className}.${c.javaFieldId}}" labelName="${c.javaFieldName}" labelValue="${"$"}{${className}.${c.javaFieldName}}"
+					title="区域" url="/sys/area/treeData" cssClass="form-control" allowClear="true" notAllowSelectParent="true"/>
+			<#elseif c.showType == "cityselect">
+				<label class="label-item single-overflow pull-left" title="${c.comments}：">${c.comments}：</label>
+				<div class=" input-group" style=" width: 100%;">
+				  	<form:input path="${c.javaFieldId}" htmlEscape="false" data-toggle="city-picker" style="height: 34px;font-size: 14px;"/>
+				 </div>
+			<#elseif c.showType == "treeselect">
+				<label class="label-item single-overflow pull-left" title="${c.comments}：">${c.comments}：</label>
+				<sys:treeselect id="${c.simpleJavaField}" name="${c.javaFieldId}" value="${"$"}{${className}.${c.javaFieldId}}" labelName="${c.javaFieldName}" labelValue="${"$"}{${className}.${c.javaFieldName}}"
+					title="${c.comments}" url="${c.dataUrl}" extId="${'$'}{${className}.id}" cssClass="form-control <#if c.isNull != "1">required</#if>" allowClear="true"/>
+			<#elseif c.showType == "gridselect">
+				<label class="label-item single-overflow pull-left" title="${c.comments}：">${c.comments}：</label>
+				<sys:gridselect url="${r"${ctx}"}${c.dataUrl}" id="${c.simpleJavaField}" name="${c.javaFieldId}" value="${"$"}{${className}.${c.javaFieldId}}" labelName="${c.javaFieldName}" labelValue="${"$"}{${className}.${c.javaFieldName}}"
+					title="选择${c.comments}" cssClass="form-control required" fieldLabels="${c.fieldLabels}" fieldKeys="${c.fieldKeys}" searchLabels="${c.searchLabel}" searchKeys="${c.searchKey}" ></sys:gridselect>
+			</#if>
+			</div>
+			</#if>
+		</#list>
+		 <div class="col-xs-12 col-sm-6 col-md-4">
+			<div style="margin-top:26px">
+			  <a  id="search" class="btn btn-primary btn-rounded  btn-bordered btn-sm"><i class="fa fa-search"></i> 查询</a>
+			  <a  id="reset" class="btn btn-primary btn-rounded  btn-bordered btn-sm" ><i class="fa fa-refresh"></i> 重置</a>
+			 </div>
+	    </div>	
+	</form:form>
+	</div>
+	</div>
+	</div>
+	
+	<!-- 工具栏 -->
+	<div id="toolbar">
+			<shiro:hasPermission name="${permissionPrefix}:add">
+				<a id="add" class="btn btn-primary" onclick="add()"><i class="glyphicon glyphicon-plus"></i> 新建</a>
+			</shiro:hasPermission>
+			<shiro:hasPermission name="${permissionPrefix}:edit">
+			    <button id="edit" class="btn btn-success" disabled onclick="edit()">
+	            	<i class="glyphicon glyphicon-edit"></i> 修改
+	        	</button>
+			</shiro:hasPermission>
+			<shiro:hasPermission name="${permissionPrefix}:del">
+				<button id="remove" class="btn btn-danger" disabled onclick="deleteAll()">
+	            	<i class="glyphicon glyphicon-remove"></i> 删除
+	        	</button>
+			</shiro:hasPermission>
+			<shiro:hasPermission name="${permissionPrefix}:import">
+				<button id="btnImport" class="btn btn-info"><i class="fa fa-folder-open-o"></i> 导入</button>
+				<div id="importBox" class="hide">
+						<form id="importForm" action="${r"${ctx}"}/${urlPrefix}/import" method="post" enctype="multipart/form-data"
+							 style="padding-left:20px;text-align:center;" ><br/>
+							<input id="uploadFile" name="file" type="file" style="width:330px"/>导入文件不能超过5M，仅允许导入“xls”或“xlsx”格式文件！<br/>　　
+							
+							
+						</form>
+				</div>
+			</shiro:hasPermission>
+	        	<a class="accordion-toggle btn btn-default" data-toggle="collapse" data-parent="#accordion2" href="#collapseTwo">
+					<i class="fa fa-search"></i> 检索
+				</a>
+		    </div>
+		
+	<!-- 表格 -->
+	<table id="${className}Table"   data-toolbar="#toolbar"></table>
+
+    <!-- context menu -->
+    <ul id="context-menu" class="dropdown-menu">
+    	<shiro:hasPermission name="${permissionPrefix}:edit">
+        <li data-item="edit"><a>编辑</a></li>
+        </shiro:hasPermission>
+        <shiro:hasPermission name="${permissionPrefix}:del">
+        <li data-item="delete"><a>删除</a></li>
+        </shiro:hasPermission>
+        <li data-item="action1"><a>取消</a></li>
+    </ul>  
+	</div>
+	</div>
+	</div>
+</body>
+</html>]]>
+	</content>
+</template>

@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.pm.modules.project.mapper.ProjectWorkCaseMapper">
+    
+	<select id="get" parameterType="ProjectWorkCase" resultType="ProjectWorkCase" >
+		SELECT 
+			concat(pro.id,",",spec.id) AS "id",
+			pro.id AS "proId",
+			spec.id AS "specId",
+			speUser.user_id AS "userId",
+			pro.num AS "proNum", 
+			pro.name AS "proName",
+			pro.pro_shortened AS "proShortened",
+			pro.type AS "proType",
+			pro.design_type AS "designType",
+			group_concat(distinct proUser.name) AS "principal",
+			group_concat(distinct superUser.name) AS "supervisor",
+			spec.name AS "specialty",
+			pro.state AS "state"
+		from pm_specialty_user speUser
+		left join pm_specialty spec on spec.id = speUser.spec_id
+		left join pm_project pro on pro.id = speUser.pro_id
+		left join pm_principal prinUser on prinUser.pro_id = pro.id
+		left join sys_user proUser on proUser.id = prinUser.user_id
+		left join pm_supervisor super on super.pro_id = pro.id
+		left join sys_user superUser on superUser.id = super.user_id
+		WHERE spec.id = #{specId}
+		and pro.id = #{proId}
+		and speUser.user_id = #{currentUser.id}
+		group by speUser.pro_id,speUser.spec_id,speUser.user_id,spec.name
+	</select>
+	
+	<select id="findList" resultType="ProjectWorkCase" >
+		select 
+			concat(pro.id,",",spec.id) AS "id",
+			pro.id AS "proId",
+			pro.serial AS "serial",
+			spec.id AS "specId",
+			speUser.user_id AS "userId",
+			pro.num AS "proNum", 
+			pro.name AS "proName",
+			pro.pro_shortened AS "proShortened",
+			pro.type AS "proType",
+			pro.design_type AS "designType",
+			group_concat(distinct proUser.name) AS "principal",
+			specialtyUser.name AS "specialtyUser",
+			group_concat(distinct superUser.name) AS "supervisor",
+			spec.name AS "specialty",
+			pro.state AS "state",
+			(select value.sort from sys_dict_type type
+				left join sys_dict_value value on type.id = value.dict_type_id
+				where type.type = 'pro_type'
+				and type.del_flag = '0'
+				and value.del_flag = '0'
+				and value.value = pro.type
+			) AS "sort"
+		from pm_specialty_user speUser
+		left join sys_user specialtyUser on specialtyUser.id = speUser.user_id
+		left join pm_specialty spec on spec.id = speUser.spec_id
+		left join pm_project pro on pro.id = speUser.pro_id
+		left join pm_principal prinUser on prinUser.pro_id = pro.id
+		left join sys_user proUser on proUser.id = prinUser.user_id
+		left join pm_supervisor super on super.pro_id = pro.id
+		left join sys_user superUser on superUser.id = super.user_id
+		<where>
+			speUser.del_flag = '0'
+			and speUser.user_id = #{currentUser.id}
+			<!-- ${dataScope} -->
+			<if test="proNum != null and proNum != ''">
+				AND pro.num LIKE 
+					<if test="dbName == 'oracle'">'%'||#{proNum}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{proNum}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{proNum},'%')</if>
+			</if>
+			<if test="proName != null and proName != ''">
+				AND pro.name LIKE 
+					<if test="dbName == 'oracle'">'%'||#{proName}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{proName}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{proName},'%')</if>
+			</if>
+			<if test="proShortened != null and proShortened != ''">
+				AND pro.pro_shortened LIKE 
+					<if test="dbName == 'oracle'">'%'||#{proShortened}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{proShortened}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{proShortened},'%')</if>
+			</if>
+			<if test="proType != null and proType != ''">
+				AND pro.type = #{proType}
+			</if>
+			<if test="designType != null and designType != ''">
+				AND pro.design_type = #{designType}
+			</if>
+			<if test="specialty != null and specialty != ''">
+				AND speUser.spec_id = #{specialty}
+			</if>
+			<if test="principal != null and principal != ''">
+				AND proUser.name LIKE 
+					<if test="dbName == 'oracle'">'%'||#{principal}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{principal}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{principal},'%')</if>
+			</if>
+			<if test="startDate != null and startDate != ''">
+				AND date_format(pro.endDate,'%Y%m%d') >= date_format(#{startDate},'%Y%m%d')
+			</if>
+			<if test="endDate != null and endDate != ''">
+				AND date_format(pro.endDate,'%Y%m%d') &lt;= date_format(#{endDate},'%Y%m%d')
+			</if>
+			<if test="(startDate == null or startDate == '') and (endDate == null or endDate == '')">
+				AND date_format(pro.endDate,'%Y') = date_format(now(),'%Y')
+			</if>
+			<if test="state != null and state != ''">
+				AND pro.state in (${state})
+			</if>
+		</where>
+		group by speUser.pro_id,speUser.spec_id,speUser.user_id,spec.name
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				order by sort,pro.num
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findLists" resultType="ProjectWorkCase" >
+		select 
+			concat(pro.id,",",spec.id) AS "id",
+			pro.serial AS "serial",
+			pro.id AS "proId",
+			spec.id AS "specId",
+			speUser.user_id AS "userId",
+			pro.num AS "proNum", 
+			pro.name AS "proName",
+			pro.pro_shortened AS "proShortened",
+			pro.type AS "proType",
+			pro.design_type AS "designType",
+			group_concat(distinct proUser.name) AS "principal",
+			specialtyUser.name AS "specialtyUser",
+			group_concat(distinct superUser.name) AS "supervisor",
+			spec.name AS "specialty",
+			pro.state AS "state",
+			(select value.sort from sys_dict_type type
+				left join sys_dict_value value on type.id = value.dict_type_id
+				where type.type = 'pro_type'
+				and type.del_flag = '0'
+				and value.del_flag = '0'
+				and value.value = pro.type
+			) AS "sort"
+		from pm_specialty_user speUser
+		left join sys_user specialtyUser on specialtyUser.id = speUser.user_id
+		left join sys_office office on office.id = specialtyUser.office_id
+		left join pm_specialty spec on spec.id = speUser.spec_id
+		left join pm_project pro on pro.id = speUser.pro_id
+		left join pm_principal prinUser on prinUser.pro_id = pro.id
+		left join sys_user proUser on proUser.id = prinUser.user_id
+		left join pm_supervisor super on super.pro_id = pro.id
+		left join sys_user superUser on superUser.id = super.user_id
+		<where>
+			speUser.del_flag = '0'
+			${dataScope}
+			<if test="proNum != null and proNum != ''">
+				AND pro.num LIKE 
+					<if test="dbName == 'oracle'">'%'||#{proNum}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{proNum}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{proNum},'%')</if>
+			</if>
+			<if test="proName != null and proName != ''">
+				AND pro.name LIKE 
+					<if test="dbName == 'oracle'">'%'||#{proName}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{proName}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{proName},'%')</if>
+			</if>
+			<if test="proShortened != null and proShortened != ''">
+				AND pro.pro_shortened like concat('%',#{proShortened},'%')
+			</if>
+			<if test="proType != null and proType != ''">
+				AND pro.type = #{proType}
+			</if>
+			<if test="designType != null and designType != ''">
+				AND pro.design_type = #{designType}
+			</if>
+			<if test="specialty != null and specialty != ''">
+				AND speUser.spec_id = #{specialty}
+			</if>
+			<if test="specialtyUser != null and specialtyUser != ''">
+				AND specialtyUser.name LIKE 
+					<if test="dbName == 'oracle'">'%'||#{specialtyUser}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{specialtyUser}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{specialtyUser},'%')</if>
+			</if>
+			<if test="principal != null and principal != ''">
+				AND proUser.name LIKE 
+					<if test="dbName == 'oracle'">'%'||#{principal}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{principal}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{principal},'%')</if>
+			</if>
+			<if test="state != null and state != ''">
+				AND pro.state in (${state})
+			</if>
+			<if test="startDate != null and startDate != ''">
+				AND date_format(pro.endDate,'%Y%m') >= date_format(#{startDate},'%Y%m')
+			</if>
+			<if test="endDate != null and endDate != ''">
+				AND date_format(pro.endDate,'%Y%m') &lt;= date_format(#{endDate},'%Y%m')
+			</if>
+			<if test="(startDate == null or startDate == '') and (endDate == null or endDate == '')">
+				AND date_format(pro.endDate,'%Y') = date_format(now(),'%Y')
+			</if>
+			<!-- <if test="(proNum == null or proNum == '') and (proName == null or proName == '') and (state == null or state == '')
+			and (proType == null or proType == '') and (designType == null or designType == '') and (specialty == null or specialty == '')
+			and (specialtyUser == null or specialtyUser == '') and (principal == null or principal == '') and (proShortened == null or proShortened == '')">
+				AND pro.state != '5'
+			</if> -->
+		</where>
+		group by speUser.pro_id,speUser.spec_id,speUser.user_id,spec.name
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				order by office.sort,specialtyUser.sort,sort,pro.num
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO pm_project_work_case(
+			id,
+			pro_id,
+			spec_id,
+			user_id,
+			spec_state,
+			content,
+			plan,
+			finish_date,
+			difficulty,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+		) VALUES (
+			#{id},
+			#{proId},
+			#{specId},
+			#{createBy.id},
+			#{specState},
+			#{content},
+			#{plan},
+			#{finishDate},
+			#{difficulty},
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE pm_project_work_case SET 
+			pro_id = #{proId},
+			spec_id = #{specId},
+			content = #{content},
+			spec_state = #{specState},
+			plan = #{plan},
+			finish_date = #{finishDate},
+			difficulty = #{difficulty},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM pm_project_work_case
+		WHERE id = #{id}
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE pm_project_work_case SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="ProjectWorkCase" statementType="STATEMENT">
+		select * FROM pm_project_work_case  where ${propertyName} = '${value}'
+	</select>
+	
+	<!-- 得到id -->
+	<select id="getId" parameterType="ProjectWorkCase" resultType="String">
+		select id
+		from pm_project_work_case 
+		where pro_id = #{proId}
+		and spec_id = #{specId}
+		and user_id = #{currentUser.id}
+	</select>
+	
+	<!-- 根据项目id和专业id查找工作情况 -->
+	<select id="getProjectWork" parameterType="ProjectWorkCase" resultType="ProjectWorkCase">
+		select 
+			spec_state AS "specState",
+			content,
+			plan,
+			finish_date AS "finishDate",
+			difficulty
+		from pm_project_work_case 
+		where pro_id = #{proId}
+		and spec_id = #{specId}
+		and user_id = #{userId}
+	</select>
+</mapper>

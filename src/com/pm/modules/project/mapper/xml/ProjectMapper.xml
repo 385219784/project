@@ -1,0 +1,557 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.pm.modules.project.mapper.ProjectMapper">
+    
+	<sql id="projectColumns">
+		a.id AS "id",
+		a.serial AS "serial",
+		a.num AS "num",
+		a.name AS "name",
+		a.pro_shortened AS "proShortened",
+		a.type AS "type",
+		a.design_type AS "designType",
+		a.content AS "content",
+		a.demand AS "demand",
+		a.state AS "state",
+		a.plan_state AS "planState",
+		a.question AS "question",
+		a.feature AS "feature",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		a.startDate,
+		a.endDate
+	</sql>
+	
+	<sql id="projectJoins">
+		
+	</sql>
+	
+    
+	<select id="get" resultType="Project" >
+		SELECT 
+			<include refid="projectColumns"/>
+		FROM pm_project a
+		<include refid="projectJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	
+	
+	<!-- 个人非党工团项目(内业外业等等) -->
+	<select id="findPagedataUser" resultType="Project" >
+		SELECT 
+			a.id AS "id",
+		a.serial AS "serial",
+		a.num AS "num",
+		a.name AS "name",
+		a.pro_shortened AS "proShortened",
+		a.type AS "type",
+		a.design_type AS "designType",
+		a.content AS "content",
+		a.demand AS "demand",
+		a.state AS "state",
+		a.plan_state AS "planState",
+		a.question AS "question",
+		a.feature AS "feature",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		(select value.sort from sys_dict_type type
+				left join sys_dict_value value on type.id = value.dict_type_id
+				where type.type = 'pro_type'
+				and type.del_flag = '0'
+				and value.del_flag = '0'
+				and value.value = a.type
+			) AS "sort"
+		FROM pm_project a   where  a.id  in (select  DISTINCT(pro_id)  from pm_specialty_user where user_id =#{principal})
+		and  a.del_flag = #{DEL_FLAG_NORMAL} and a.state !='5'  <!-- and  a.type  not in('12','13','14') -->
+			<if test="num != null and num != ''">
+				AND a.num LIKE 
+					<if test="dbName == 'oracle'">'%'||#{num}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{num}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{num},'%')</if>
+			</if>
+			<if test="name != null and name != ''">
+				AND a.name LIKE 
+					<if test="dbName == 'oracle'">'%'||#{name}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{name}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{name},'%')</if>
+			</if>
+				<if test="proShortened != null and proShortened != ''">
+				AND a.pro_shortened LIKE 
+					<if test="dbName == 'oracle'">'%'||#{proShortened}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{proShortened}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{proShortened},'%')</if>
+			</if>
+				ORDER BY sort,a.num
+	</select>
+	
+	
+	
+	<!-- 个人党工团项目 -->
+	<select id="findPagedataUserDgt" resultType="Project" >
+		SELECT 
+			a.id AS "id",
+		a.serial AS "serial",
+		a.num AS "num",
+		a.name AS "name",
+		a.pro_shortened AS "proShortened",
+		a.type AS "type",
+		a.design_type AS "designType",
+		a.content AS "content",
+		a.demand AS "demand",
+		a.state AS "state",
+		a.plan_state AS "planState",
+		a.question AS "question",
+		a.feature AS "feature",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		(select value.sort from sys_dict_type type
+				left join sys_dict_value value on type.id = value.dict_type_id
+				where type.type = 'pro_type'
+				and type.del_flag = '0'
+				and value.del_flag = '0'
+				and value.value = a.type
+			) AS "sort"
+		FROM pm_project a   where  a.id  in (select  DISTINCT(pro_id)  from pm_specialty_user where user_id =#{principal})
+		and  a.del_flag = #{DEL_FLAG_NORMAL} and a.state !='5'  and  a.type in('12','13','14')
+		<if test="num != null and num != ''">
+				AND a.num LIKE 
+					<if test="dbName == 'oracle'">'%'||#{num}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{num}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{num},'%')</if>
+			</if>
+			<if test="name != null and name != ''">
+				AND a.name LIKE 
+					<if test="dbName == 'oracle'">'%'||#{name}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{name}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{name},'%')</if>
+			</if>
+			<if test="proShortened != null and proShortened != ''">
+				AND a.pro_shortened LIKE 
+					<if test="dbName == 'oracle'">'%'||#{proShortened}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{proShortened}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{proShortened},'%')</if>
+			</if>
+				ORDER BY sort,a.num
+	</select>
+	
+	
+	
+	
+	<select id="findList" resultType="Project" >
+		SELECT 
+			a.id AS "id",
+			a.serial AS "serial",
+			a.num AS "num",
+			a.name AS "name",
+			a.pro_shortened AS "proShortened",
+			a.type AS "type",
+			a.design_type AS "designType",
+			group_concat(distinct superUser.name) AS "supervisor",
+			group_concat(distinct princiUser.name) AS "principal",
+			a.content AS "content",
+			a.demand AS "demand",
+			a.state AS "state",
+			a.plan_state AS "planState",
+			a.question AS "question",
+			a.feature AS "feature",
+			a.create_by AS "createBy.id",
+			a.create_date AS "createDate",
+			a.update_by AS "updateBy.id",
+			a.update_date AS "updateDate",
+			a.remarks AS "remarks",
+			a.del_flag AS "delFlag",
+			(select value.sort from sys_dict_type type
+				left join sys_dict_value value on type.id = value.dict_type_id
+				where type.type = 'pro_type'
+				and type.del_flag = '0'
+				and value.del_flag = '0'
+				and value.value = a.type
+			) AS "sort"
+		FROM pm_project a
+		left join pm_principal princi on princi.pro_id = a.id
+		LEFT JOIN sys_user princiUser ON princiUser.id = princi.user_id
+		left join pm_supervisor super on super.pro_id = a.id
+		LEFT JOIN sys_user superUser ON superUser.id = super.user_id
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			and super.del_flag = 0
+			and princi.del_flag = 0
+			<!-- and a.state not in ('4','5') -->
+			${dataScope}
+			<if test="num != null and num != ''">
+				AND a.num LIKE 
+					<if test="dbName == 'oracle'">'%'||#{num}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{num}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{num},'%')</if>
+			</if>
+			<if test="name != null and name != ''">
+				AND a.name LIKE 
+					<if test="dbName == 'oracle'">'%'||#{name}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{name}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{name},'%')</if>
+			</if>
+			<if test="proShortened != null and proShortened != ''">
+				AND a.pro_shortened LIKE 
+					<if test="dbName == 'oracle'">'%'||#{proShortened}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{proShortened}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{proShortened},'%')</if>
+			</if>
+			<if test="type != null and type != ''">
+				AND a.type = #{type}
+			</if>
+			<if test="proType != null and proType != ''">
+				AND a.type not in (${proType})
+			</if>
+			<if test="planState != null and planState != ''">
+				AND a.plan_state = #{planState}
+			</if>
+			<if test="designType != null and designType != ''">
+				AND a.design_type = #{designType}
+			</if>
+			<if test="startDate1 != null and startDate1 != ''">
+				AND date_format(a.startDate,'%Y%m%d') >= date_format(#{startDate1},'%Y%m%d')
+			</if>
+			<if test="startDate2 != null and startDate2 != ''">
+				AND date_format(a.startDate,'%Y%m%d') &lt;= date_format(#{startDate2},'%Y%m%d')
+			</if>
+			<if test="endDate1 != null and endDate1 != ''">
+				AND date_format(a.endDate,'%Y%m%d') >= date_format(#{endDate1},'%Y%m%d')
+			</if>
+			<if test="endDate2 != null and endDate2 != ''">
+				AND date_format(a.endDate,'%Y%m%d') &lt;= date_format(#{endDate2},'%Y%m%d')
+			</if>
+			<if test="(startDate1 == null or startDate1 == '') and (startDate2 == null or startDate2 == '')
+			and (endDate1 == null or endDate1 == '') and (endDate2 == null or endDate2 == '')">
+				AND date_format(a.endDate,'%Y') = date_format(now(),'%Y')
+			</if>
+			<if test="user != null and user.name != null and user.name != ''">
+				AND a.id in (
+					select pro_id from pm_specialty_user where del_flag = 0 and user_id = (select id from sys_user where name like '%${user.name}%')
+					union 
+					select pro_id from pm_principal where del_flag = 0 and user_id = (select id from sys_user where name like '%${user.name}%')
+					union
+					select pro_id from pm_supervisor where del_flag = 0 and user_id = (select id from sys_user where name like '%${user.name}%')
+				)
+			</if>
+			<!-- <if test="supervisor != null and supervisor != ''">
+				AND superUser.name LIKE 
+					<if test="dbName == 'oracle'">'%'||#{supervisor}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{supervisor}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{supervisor},'%')</if>
+			</if>
+			<if test="principal != null and principal != ''">
+				AND princiUser.name LIKE 
+					<if test="dbName == 'oracle'">'%'||#{principal}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{principal}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{principal},'%')</if>
+			</if> -->
+			<if test="content != null and content != ''">
+				AND a.content = #{content}
+			</if>
+			<if test="demand != null and demand != ''">
+				AND a.demand = #{demand}
+			</if>
+			<if test="state != null and state != ''">
+				AND a.state in (${state})
+			</if>
+			<if test="question != null and question != ''">
+				AND a.question = #{question}
+			</if>
+			<if test="feature != null and feature != ''">
+				AND a.feature = #{feature}
+			</if>
+		</where>
+		group by a.id
+		having 1=1
+		<if test="supervisor != null and supervisor != ''">
+			 and group_concat(distinct superUser.name) like 
+				<if test="dbName == 'oracle'">'%'||#{supervisor}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{supervisor}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{supervisor},'%')</if>
+		</if>
+		<if test="principal != null and principal != ''">
+			and group_concat(distinct princiUser.name) like
+				<if test="dbName == 'oracle'">'%'||#{principal}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{principal}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{principal},'%')</if>
+		</if>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY sort,a.num
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="Project" >
+		SELECT 
+			<include refid="projectColumns"/>
+		FROM pm_project a
+		<include refid="projectJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO pm_project(
+			id,
+			serial,
+			num,
+			name,
+			pro_shortened,
+			type,
+			design_type,
+			content,
+			demand,
+			state,
+			plan_state,
+			question,
+			feature,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag,
+			startDate,
+			endDate
+		) VALUES (
+			#{id},
+			#{serial},
+			#{num},
+			#{name},
+			#{proShortened},
+			#{type},
+			#{designType},
+			#{content},
+			#{demand},
+			#{state},
+			#{planState},
+			#{question},
+			#{feature},
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{remarks},
+			#{delFlag},
+			#{startDate},
+			#{endDate}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE pm_project SET 	
+			num = #{num},
+			name = #{name},
+			pro_shortened = #{proShortened},
+			type = #{type},
+			design_type = #{designType},
+			content = #{content},
+			demand = #{demand},
+			state = #{state},
+			plan_state = #{planState},
+			question = #{question},
+			feature = #{feature},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			remarks = #{remarks},
+			startDate = #{startDate},
+			endDate = #{endDate}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM pm_project
+		WHERE id = #{id}
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE pm_project SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="Project" statementType="STATEMENT">
+		select * FROM pm_project  where ${propertyName} = '${value}'
+	</select>
+	
+	<!-- 查找所有的用户 -->
+	<select id="getAllUser" parameterType="String" resultType="Supervisor">
+		select 
+			id AS "userId",
+			name AS "userName"
+		from sys_user
+		where del_flag = '0'
+		and id in (select user_id from pm_user_specialty where spec_id = #{specId})
+		order by CONVERT(name USING gbk)
+	</select>
+	
+	<!-- 查找所有项目主管 -->
+	<select id="getAllSuperUser" resultType="Supervisor">
+		select 
+			id AS "userId",
+			name AS "userName"
+		from sys_user
+		where del_flag = '0'
+		and is_supper = '1'
+		order by sort
+	</select>
+	
+	<!-- 查找所有项目负责人 -->
+	<select id="getAllPrincipalUser" resultType="Principal">
+		select 
+			id AS "userId",
+			name AS "userName"
+		from sys_user
+		where del_flag = '0'
+		and is_principal = '1'
+		order by CONVERT(name USING gbk)
+	</select>
+	
+	<!-- 根据项目id查找项目主管 -->
+	<select id="getSupervisorListByProId" parameterType="String" resultType="Supervisor" >
+		SELECT 
+			a.user_id AS "userId"
+		FROM pm_supervisor a
+		where a.del_flag = '0'
+		AND a.pro_id = #{proId}
+	</select>
+	
+	<!-- 根据项目id查找项目负责人 -->
+	<select id="getPrincipalListsByProId" parameterType="String" resultType="Principal" >
+		SELECT 
+			a.user_id AS "userId"
+		FROM pm_principal a
+		where a.del_flag = '0'
+		AND a.pro_id = #{proId}
+	</select>
+	
+	<!-- 根据项目id查找专业人员 -->
+	<select id="getSpecialtyUserListByProId" parameterType="String" resultType="SpecialtyUser" >
+		SELECT 
+			concat(a.user_id,"#",a.spec_id) AS "userId"
+		FROM pm_specialty_user a
+		where a.del_flag = '0'
+		AND a.pro_id = #{proId}
+	</select>
+	
+	<!-- 根据项目id和专业id查找专业人员 -->
+	<select id="getSpecialtyUserListByProIdAndSpecId" parameterType="String" resultType="String" >
+		SELECT 
+			group_concat(user.name)
+		FROM pm_specialty_user a
+		left join sys_user user on user.id = a.user_id
+		where a.del_flag = '0'
+		AND a.pro_id = #{proId}
+		and a.spec_id = #{specId}
+	</select>
+	
+	<!-- 得到项目状态 -->
+	<select id="getProState" parameterType="String" resultType="Integer" >
+		SELECT 
+			state
+		FROM pm_project
+		WHERE id = #{id}
+	</select>
+	
+	<!--改变项目状态-->
+	<update id="updateState">
+		UPDATE pm_project SET 
+			state = #{state},
+			<if test="planState != null and planState != ''">
+				plan_state = #{planState},
+			</if>
+			update_by = #{updateBy.id},
+			update_date = #{updateDate}
+		WHERE id = #{id}
+		<!-- and state != '5' -->
+	</update>
+	
+	<!--根据项目id修改所有专业状态和进度为已完成-->
+	<update id="updateSpecialtyState" parameterType="String">
+		UPDATE pm_project_work_case 
+		set spec_state = 5,plan = 10
+		WHERE pro_id = #{proId}
+	</update>
+	
+	
+	
+		<select id="getLeaderByproId"  resultType="String" >
+		SELECT 
+			user_id
+		FROM pm_principal
+		WHERE pro_id = #{proId}
+	</select>
+	
+	
+	
+		<select id="getUserListByProId"  resultType="String" >
+		SELECT  DISTINCT(user_id) from pm_specialty_user  where  pro_id=#{proId}
+		
+	</select>
+	
+	<!-- 查找最大序号 -->
+	<select id="getMaxSerial" resultType="Integer">
+		select IFNULL(max(serial),0) from pm_project
+	</select>
+	
+	
+	
+	
+	<!-- 正在进行需要提醒的项目 -->
+	<select id="getNotifyProject" resultType="String">
+		select id  from pm_project  where demand  is not null  and  del_flag='0'  AND  state!=5  and 
+				(to_days(demand)-to_days(now())=5   
+ 				OR  to_days(demand)-to_days(now())=3 OR
+ 				to_days(demand)-to_days(now())=1   ) 
+	</select>
+	
+	
+		
+	<!-- 正在进行需要提醒的项目 -->
+	<select id="getFzrList" resultType="String">
+		select  DISTINCT(user_id)   from pm_principal  where pro_id=#{proId}   and del_flag='0'
+	</select>
+	
+	
+	<!-- 正在进行需要提醒的项目 -->
+	<select id="getZgList" resultType="String">
+		select  DISTINCT(user_id)   from pm_supervisor  where pro_id=#{proId}   and del_flag='0'
+	</select>
+	
+	<!-- 正在进行需要提醒的项目 -->
+	<select id="getNum" parameterType="String" resultType="String">
+		select max(num) from pm_project where num like '${str}%' and del_flag = 0
+	</select>
+</mapper>

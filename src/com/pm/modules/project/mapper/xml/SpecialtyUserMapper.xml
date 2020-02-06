@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.pm.modules.project.mapper.SpecialtyUserMapper">
+    
+	<sql id="specialtyUserColumns">
+		a.id AS "id",
+		a.pro_id AS "proId",
+		a.spec_id AS "specId",
+		a.user_id AS "user.id",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+				
+				
+				
+		user.name AS "user.name"
+	</sql>
+	
+	<sql id="specialtyUserJoins">
+		
+		LEFT JOIN sys_user user ON user.id = a.user_id
+	</sql>
+	
+    
+	<select id="get" resultType="SpecialtyUser" >
+		SELECT 
+			<include refid="specialtyUserColumns"/>
+		FROM pm_specialty_user a
+		<include refid="specialtyUserJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="SpecialtyUser" >
+		SELECT 
+			<include refid="specialtyUserColumns"/>
+		FROM pm_specialty_user a
+		<include refid="specialtyUserJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="SpecialtyUser" >
+		SELECT 
+			<include refid="specialtyUserColumns"/>
+		FROM pm_specialty_user a
+		<include refid="specialtyUserJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO pm_specialty_user(
+			id,
+			pro_id,
+			spec_id,
+			user_id,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+		) VALUES (
+			#{id},
+			#{proId},
+			#{specId},
+			#{userId},
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE pm_specialty_user SET 	
+			pro_id = #{proId},
+			spec_id = #{specId},
+			user_id = #{user.id},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM pm_specialty_user
+		WHERE pro_id = #{proId}
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE pm_specialty_user SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE pro_id = #{proId}
+	</update>
+	
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="SpecialtyUser" statementType="STATEMENT">
+		select * FROM pm_specialty_user  where ${propertyName} = '${value}'
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+</mapper>

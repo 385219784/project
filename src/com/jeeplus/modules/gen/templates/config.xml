@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+	<!-- 生成分类 -->
+	<category>
+		<category value="curd" label="单表">
+			<template>curd/one/controller.xml</template>
+			<template>curd/one/service.xml</template>
+			<template>mapper/mapper.java.xml</template>
+			<template>mapper/entity.xml</template>
+			<template>mapper/mapper.xml</template>
+			<template>curd/one/viewForm.xml</template>
+			<template>curd/one/viewList.xml</template>
+			<template>curd/one/viewListJs.xml</template>
+		</category>
+		<category value="curd_many" label="主附表">
+			<template>curd/many/controllerMany.xml</template>
+			<template>curd/many/serviceMany.xml</template>
+			<template>mapper/mapper.java.xml</template>
+			<template>mapper/entity.xml</template>
+			<template>mapper/mapper.xml</template>
+			<template>curd/many/viewFormMany.xml</template>
+			<template>curd/many/viewListMany.xml</template>
+			<template>curd/many/viewListJsMany.xml</template>
+			<childTable>
+				<template>mapper/mapper.java.xml</template>
+				<template>mapper/entity.xml</template>
+				<template>mapper/mapper.xml</template>
+			</childTable>
+		</category>
+		<category value="treeTable" label="树结构表">
+			<template>treetable/controller.xml</template>
+			<template>treetable/service.xml</template>
+			<template>treetable/mapper.java.xml</template>
+			<template>treetable/entity.xml</template>
+			<template>treetable/mapper.xml</template>
+			<template>treetable/viewForm.xml</template>
+			<template>treetable/viewList.xml</template>
+			<template>treetable/viewListJs.xml</template>
+		</category>
+		<category value="leftTreeRightTable" label="左树右表">
+				<template>lefttreerighttable/tree/controller.xml</template>
+				<template>lefttreerighttable/tree/service.xml</template>
+				<template>lefttreerighttable/tree/mapper.java.xml</template>
+				<template>lefttreerighttable/tree/entity.xml</template>
+				<template>lefttreerighttable/tree/mapper.xml</template>
+				<template>lefttreerighttable/tree/viewForm.xml</template>
+				<template>lefttreerighttable/tree/viewListJs.xml</template>
+			<childTable>
+				<template>lefttreerighttable/table/controller.xml</template>
+				<template>lefttreerighttable/table/service.xml</template>
+				<template>lefttreerighttable/table/mapper.java.xml</template>
+				<template>lefttreerighttable/table/entity.xml</template>
+				<template>lefttreerighttable/table/mapper.xml</template>
+				<template>lefttreerighttable/table/viewForm.xml</template>
+				<template>lefttreerighttable/table/viewList.xml</template>
+				<template>lefttreerighttable/table/viewListJs.xml</template>
+			</childTable>
+		</category>
+	</category>
+	<!-- 数据库字段类型 -->
+	<MysqlFieldType>
+		<genDict value="varchar(64)" label="varchar(64)"/>
+		<genDict value="nvarchar(64)" label="nvarchar(64)"/>
+		<genDict value="integer" label="integer"/>
+		<genDict value="double" label="double"/>
+		<genDict value="datetime" label="datetime"/>
+		<genDict value="longblob" label="longblob"/>
+		<genDict value="longtext" label="longtext"/>
+	
+	</MysqlFieldType>
+	
+	<OracleFieldType>
+		<genDict value="varchar2(64)" label="varchar2(64)"/>
+		<genDict value="nvarchar2(64)" label="nvarchar2(64)"/>
+		<genDict value="number(10,0)" label="number(10,0)"/>
+		<genDict value="float(24)" label="float(24)"/>
+		<genDict value="date" label="date"/>
+		<genDict value="blob" label="blob"/>
+		<genDict value="clob" label="clob"/>
+	</OracleFieldType>
+	<!-- java类型 -->
+	<javaType>
+		<genDict value="String" label="String"/>
+		<genDict value="Long" label="Long"/>
+		<genDict value="Integer" label="Integer"/>
+		<genDict value="Double" label="Double"/>
+		<genDict value="java.util.Date" label="Date"/>
+		<genDict value="com.jeeplus.modules.sys.entity.User" label="User"/>
+		<genDict value="com.jeeplus.modules.sys.entity.Office" label="Office"/>
+		<genDict value="com.jeeplus.modules.sys.entity.Area" label="Area"/>
+		<genDict value="This" label="ThisObj" description="生成当前对象"/>
+	</javaType>
+	<!-- 查询类型 -->
+	<queryType>
+		<genDict value="=" label="="/>
+		<genDict value="!=" label="!="/>
+		<genDict value="&gt;" label="&gt;"/>
+		<genDict value="&gt;=" label="&gt;="/>
+		<genDict value="&lt;" label="&lt;"/>
+		<genDict value="&lt;=" label="&lt;="/>
+		<genDict value="between" label="Between"/>
+		<genDict value="like" label="Like"/>
+		<genDict value="left_like" label="Left Like"/>
+		<genDict value="right_like" label="Right Like"/>
+	</queryType>
+	<!-- 字段显示类型 -->
+	<showType>
+		<genDict value="input" label="单行文本"/>
+		<genDict value="textarea" label="多行文本"/>
+		<genDict value="umeditor" label="富文本编辑器"/>
+		<genDict value="select" label="下拉选项"/>
+		<genDict value="radiobox" label="单选按钮"/>
+		<genDict value="checkbox" label="复选框"/>
+		<genDict value="dateselect" label="日期选择"/>
+		<genDict value="userselect" label="人员选择"/>
+		<genDict value="officeselect" label="部门选择"/>
+		<genDict value="areaselect" label="区域选择"/>
+		<genDict value="cityselect" label="省市区三级联动"/>
+		<genDict value="treeselect" label="树选择控件"/>
+		<genDict value="fileselect" label="文件上传选择"/>
+		<genDict value="gridselect" label="grid选择框"/>
+	</showType>
+	<!-- 验证类型 -->
+	<validateType>
+		<genDict value="" label=""/>
+		<genDict value="string" label="字符串"/>
+		<genDict value="email" label="电子邮件"/>
+		<genDict value="url" label="网址"/>
+		<genDict value="date" label="日期"/>
+		<genDict value="dateISO" label="日期(ISO)"/>
+		<genDict value="creditcard" label="信用卡号"/>
+		<genDict value="isMobile" label="手机号码"/>
+		<genDict value="isPhone" label="电话号码"/>
+		<genDict value="isTel" label="手机/电话"/>
+		<genDict value="isQq" label="QQ号码"/>
+		<genDict value="isIdCardNo" label="身份证号码"/>
+		<genDict value="number" label="数字"/>
+		<genDict value="digits" label="整数"/>
+		<genDict value="isIntGtZero" label="整数(大于0)"/>
+		<genDict value="isIntGteZero" label="整数(大于等于0)"/>
+		<genDict value="isIntLtZero" label="整数(小于0)"/>
+		<genDict value="isIntLteZero" label="整数(小于等于0)"/>
+		<genDict value="isFloatGtZero" label="浮点数(大于0)"/>
+		<genDict value="isFloatGteZero" label="浮点数(大于等于0)"/>
+		<genDict value="isFloatLtZero" label="浮点数(小于0)"/>
+		<genDict value="isFloatLteZero" label="浮点数(小于等于0)"/>
+		<genDict value="isZipCode" label="邮政编码"/>
+		<genDict value="isPwd" label="密码" description="以字母开头，长度在6-12之间，只能包含字符、数字和下划线"/> 
+		<genDict value="stringCheck" label="中文/英文/数字/下划线" description="只能包含中文、英文、数字、下划线等字符"/>
+		<genDict value="isEnglish" label="英语"/>
+		<genDict value="isChinese" label="汉子"/>
+		<genDict value="isChineseChar" label="汉英字符" description="匹配中文(包括汉字和字符)"/>
+		<genDict value="isRightfulString" label="合法字符" description="判断是否为合法字符(a-zA-Z0-9-_)"/>
+	</validateType>
+</config>

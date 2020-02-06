@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<template>
+	<name>viewListJs</name>
+	<filePath>src/main/webapp/webpage/${lastPackageName}/${moduleName}/${subModuleName}</filePath>
+	<fileName>${className}TreeList.js</fileName>
+	<content><![CDATA[<%@ page contentType="text/html;charset=UTF-8" %>
+	<script>
+		$(document).ready(function() {
+			var to = false;
+			$('#search_q').keyup(function () {
+				if(to) { clearTimeout(to); }
+				to = setTimeout(function () {
+					var v = $('#search_q').val();
+					$('#${className}jsTree').jstree(true).search(v);
+				}, 250);
+			});
+			$('#${className}jsTree').jstree({
+				'core' : {
+					"multiple" : false,
+					"animation" : 0,
+					"themes" : { "variant" : "large", "icons":true , "stripes":true},
+					'data' : {
+						"url" : "${r"${ctx}"}/${urlPrefix}/treeData",
+						"dataType" : "json" 
+					}
+				},
+				"conditionalselect" : function (node, event) {
+					return false;
+				},
+				'plugins': ["contextmenu", 'types', 'wholerow', "search"],
+				"contextmenu": {
+					"items": function (node) {
+						var tmp = $.jstree.defaults.contextmenu.items();
+						delete tmp.create.action;
+						delete tmp.rename.action;
+						tmp.rename = null;
+						tmp.create = {
+							"label": "添加下级${functionNameSimple}",
+							"action": function (data) {
+								var inst = jQuery.jstree.reference(data.reference),
+									obj = inst.get_node(data.reference);
+								jp.openDialog('添加下级${functionNameSimple}', '${r"${ctx}"}/${urlPrefix}/form?parent.id=' + obj.id + "&parent.name=" + obj.text, '800px', '500px', $('#${className}jsTree'));
+							}
+						};
+						tmp.remove = {
+							"label": "删除${functionNameSimple}",
+							"action": function (data) {
+								var inst = jQuery.jstree.reference(data.reference),
+									obj = inst.get_node(data.reference);
+								jp.confirm('确认要删除${functionNameSimple}吗？', function(){
+									jp.loading();
+									$.get("${r"${ctx}"}/${urlPrefix}/delete?id="+obj.id, function(data){
+										if(data.success){
+											$('#${className}jsTree').jstree("refresh");
+											jp.success(data.msg);
+										}else{
+											jp.error(data.msg);
+										}
+									})
+
+								});
+							}
+						}
+						tmp.ccp = {
+							"label": "编辑${functionNameSimple}",
+							"action": function (data) {
+								var inst = jQuery.jstree.reference(data.reference),
+									obj = inst.get_node(data.reference);
+								var parentId = inst.get_parent(data.reference);
+								var parent = inst.get_node(parentId);
+								jp.openDialog('编辑${functionNameSimple}', '${r"${ctx}"}/${urlPrefix}/form?id=' + obj.id, '800px', '500px', $('#${className?uncap_first}jsTree'));
+							}
+						}
+						return tmp;
+					}
+
+				},
+				"types":{
+					'default' : { 'icon' : 'fa fa-file-text-o' },
+					'1' : {'icon' : 'fa fa-home'},
+					'2' : {'icon' : 'fa fa-umbrella' },
+					'3' : { 'icon' : 'fa fa-group'},
+					'4' : { 'icon' : 'fa fa-file-text-o' }
+				}
+
+			}).bind("activate_node.jstree", function (obj, e) {
+				var node = $('#${className}jsTree').jstree(true).get_selected(true)[0];
+				var opt = {
+					silent: true,
+					query:{
+						'${childSimpleJavaField}.id':node.id
+					}
+				};
+				$("#${childSimpleJavaField}Id").val(node.id);
+				$("#${childSimpleJavaField}Name").val(node.text);
+				$('#${table.childList[0].className?uncap_first}Table').bootstrapTable('refresh',opt);
+			}).on('loaded.jstree', function() {
+				$("#${className}jsTree").jstree('open_all');
+			});
+		});
+	</script>]]>
+	</content>
+</template>

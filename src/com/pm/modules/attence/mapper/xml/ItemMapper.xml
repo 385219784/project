@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.pm.modules.attence.mapper.ItemMapper">
+    
+	<sql id="itemColumns">
+		a.id AS "id",
+		a.name AS "name",
+		a.sort AS "sort",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		
+		user.name AS "user.name"
+	</sql>
+	
+	<sql id="itemJoins">
+		left join sys_user user on user.id = a.create_by
+	</sql>
+	
+    
+	<select id="get" resultType="Item" >
+		SELECT 
+			<include refid="itemColumns"/>
+		FROM pm_item a
+		<include refid="itemJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="Item" >
+		SELECT 
+			<include refid="itemColumns"/>
+		FROM pm_item a
+		<include refid="itemJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+			<if test="name != null and name != ''">
+				AND a.name LIKE 
+					<if test="dbName == 'oracle'">'%'||#{name}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{name}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{name},'%')</if>
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.sort 
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="Item" >
+		SELECT 
+			<include refid="itemColumns"/>
+		FROM pm_item a
+		<include refid="itemJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO pm_item(
+			id,
+			name,
+			sort,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+		) VALUES (
+			#{id},
+			#{name},
+			#{sort},
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE pm_item SET 	
+			name = #{name},
+			sort = #{sort},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM pm_item
+		WHERE id = #{id}
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE pm_item SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="Item" statementType="STATEMENT">
+		select * FROM pm_item  where ${propertyName} = '${value}'
+	</select>
+	
+	
+	<!-- 工日统计汇总列表数据 -->
+	<select id="findWorkItem" parameterType="WorkItem" resultType="WorkItem">
+		select 
+		IFNULL(sum(a.work_time),0) AS "sumWorkTime", 
+		IFNULL(sum(a.over_time),0) AS "sumOverTime",
+
+        IFNULL(sum(a.over_time),0)+round(IFNULL(sum(a.over_time),0)/7,1) AS "overTimeDay",
+
+		a.create_by AS "user.id",
+		user.name AS "user.name"
+		from pm_work_attence a
+		left join sys_user user on user.id = a.create_by
+		left join sys_office office on user.office_id = office.id
+		<where>
+			a.del_flag = 0
+			and a.item_type not in ('7','8','9','15')
+			${dataScope}
+			<if test="workDateStart != null and workDateStart != ''">
+				and date_format(a.work_date,'%Y%m') >= date_format(#{workDateStart},'%Y%m')
+			</if>
+			<if test="workDateEnd != null and workDateEnd != ''">
+				and date_format(a.work_date,'%Y%m') &lt;= date_format(#{workDateEnd},'%Y%m')
+			</if>
+			<if test="(workDateStart == null or workDateStart == '') and (workDateEnd == null or workDateEnd == '')">
+				and date_format(a.work_date,'%Y') = date_format(now(),'%Y')
+			</if>
+			<if test="user != null and user.name != null and user.name != ''">
+				and user.name LIKE 
+					<if test="dbName == 'oracle'">'%'||#{user.name}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{user.name}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{user.name},'%')</if> 
+			</if>
+			<if test="itemType != null and itemType != ''">
+				and a.item_type = #{itemType}
+			</if>
+		</where> 
+		group by a.create_by
+		order by office.sort,user.sort
+	</select>
+	
+	<!-- 得到相应考勤事项的天数 -->
+	<select id="getWorkItem" parameterType="WorkItem" resultType="WorkItem">
+		select 
+		IFNULL(sum(a.work_time),0) AS "sumWorkTime", 
+		IFNULL(sum(a.over_time),0) AS "sumOverTime"
+		from pm_work_attence a
+		<where>
+			a.del_flag = 0
+			and a.create_by = #{user.id}
+			${dataScope}
+			<if test="workDateStart != null and workDateStart != ''">
+				and date_format(a.work_date,'%Y%m') >= date_format(#{workDateStart},'%Y%m')
+			</if>
+			<if test="workDateEnd != null and workDateEnd != ''">
+				and date_format(a.work_date,'%Y%m') &lt;= date_format(#{workDateEnd},'%Y%m')
+			</if>
+			<if test="(workDateStart == null or workDateStart == '') and (workDateEnd == null or workDateEnd == '')">
+				and date_format(a.work_date,'%Y') = date_format(now(),'%Y')
+			</if>
+			<if test="itemType != null and itemType != ''">
+				and a.item_type = #{itemType}
+			</if>
+		</where> 
+		group by a.create_by
+	</select>
+	
+	<!-- 得到出差天数 -->
+	<select id="getEvectionNum" parameterType="WorkItem" resultType="Date">
+		select 
+			DISTINCT a.work_date
+		from pm_work_attence a
+		<where>
+			a.del_flag = 0
+			and a.create_by = #{user.id}
+			${dataScope}
+			<if test="workDateStart != null and workDateStart != ''">
+				and date_format(a.work_date,'%Y%m') >= date_format(#{workDateStart},'%Y%m')
+			</if>
+			<if test="workDateEnd != null and workDateEnd != ''">
+				and date_format(a.work_date,'%Y%m') &lt;= date_format(#{workDateEnd},'%Y%m')
+			</if>
+			<if test="(workDateStart == null or workDateStart == '') and (workDateEnd == null or workDateEnd == '')">
+				and date_format(a.work_date,'%Y') = date_format(now(),'%Y')
+			</if>
+			<if test="isTrip != null and isTrip != ''">
+				and a.is_trip = #{isTrip}
+			</if>
+		</where> 
+		group by a.work_date
+	</select>
+</mapper>

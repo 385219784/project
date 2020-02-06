@@ -1,0 +1,573 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.pm.modules.attence.mapper.WorkAttenceMapper">
+    
+	<sql id="workAttenceColumns">
+		a.id AS "id",
+		a.pro_id AS "proId",
+		a.pro_id AS "project.id",
+		p.name  AS  "proName",
+		p.name AS  "project.name",
+		p.pro_shortened  AS   "project.proShortened",
+		a.item_type  AS  "itemType",
+		it.name  AS  "itemName",
+		p.num   AS   "proNum",
+		a.spec_id AS "specId",
+		a.spec_id AS "specialty.id",
+		s.name  AS   "specName",
+		s.name AS  "specialty.name",
+		a.work_time AS "workTime",
+		a.over_time AS "overTime",
+		a.work_date AS "workDate",
+		a.create_by AS "createBy.id",
+		u.name  AS  "createBy.name",
+		u.name  AS  "user.name",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		a.is_trip  AS "isTrip",
+		a.item_type AS "itemType"
+	</sql>
+	
+	<sql id="workAttenceJoins">
+		LEFT JOIN pm_project  p  on a.pro_id=p.id
+		LEFT JOIN pm_specialty s  on a.spec_id=s.id
+		LEFT  JOIN sys_user   u  on  u.id=a.create_by
+		LEFT  JOIN pm_item    it on  it.id=a.item_type
+	</sql>
+	
+	 <select id="getList" resultType="WorkAttence" >
+		SELECT 
+			<include refid="workAttenceColumns"/>
+		FROM pm_work_attence a
+		<include refid="workAttenceJoins"/>
+		where a.work_date >=#{start}	
+		and   a.work_date  &lt;= #{end} 
+	    and   a.create_by=#{userId} 
+		
+	</select> 
+	
+	
+	
+	
+	
+	
+    
+	<select id="get" resultType="WorkAttence" >
+		SELECT 
+			<include refid="workAttenceColumns"/>
+		FROM pm_work_attence a
+		<include refid="workAttenceJoins"/>
+		WHERE a.id = #{id} 
+	</select>
+	
+	<!-- 获取用户的日程记录 -->
+	<select id="getUserRecordByDate" resultType="WorkAttence" >
+		SELECT 
+			<include refid="workAttenceColumns"/>
+		FROM pm_work_attence a
+		<include refid="workAttenceJoins"/>
+		WHERE a.create_by = #{userId}   and a.work_date=#{date}
+	</select>
+	
+	
+	
+    <!-- 获取用户的专业记录-->
+	<select id="getUserSpec" resultType="WorkAttence" >
+		SELECT 
+			spu.pro_id  AS  "proId",
+			spu.spec_id  AS  "specId",
+			p.name  AS  "proName",
+			p.num   AS   "proNum",
+			s.name  AS   "specName",
+			u.id  AS   "createBy.id",
+			u.name  AS   "createBy.name"
+		FROM pm_specialty_user   spu
+		LEFT JOIN pm_project  p  on spu.pro_id=p.id
+		LEFT JOIN pm_specialty s  on spu.spec_id=s.id
+		LEFT  JOIN sys_user   u  on  u.id=spu.user_id
+		WHERE spu.user_id = #{userId} and
+		  DATE_FORMAT(#{date},'%Y%m%d') >=DATE_FORMAT(p.create_date,'%Y%m%d')
+		
+		
+	</select>
+	
+	
+	<select id="getUserMonthList" resultType="WorkAttence" >
+		select  it.id  AS "itemType"  ,
+		it.name  AS "itemName",
+		SUM(IFNULL(a.work_time,0)) AS "workTime",
+		SUM(IFNULL(a.over_time,0)) AS "overTime"  from		
+		pm_work_attence a  
+		LEFT JOIN pm_item it  on a.item_type=it.id
+		where a.create_by=#{userId}   
+		<if test="workDateStart != null and workDateStart != ''">
+				and date_format(a.work_date,'%Y%m') >= date_format(#{workDateStart},'%Y%m')
+			</if>
+			<if test="workDateEnd != null and workDateEnd != ''">
+				and date_format(a.work_date,'%Y%m') &lt;= date_format(#{workDateEnd},'%Y%m')
+			</if>
+			<if test="(workDateStart == null or workDateStart == '') and (workDateEnd == null or workDateEnd == '')">
+				 and DATE_FORMAT(a.work_date,'%Y%m')  =DATE_FORMAT(#{date},'%Y%m')
+			</if>
+		 GROUP BY a.item_type,it.name
+	</select>
+
+	<!-- <select id="getList" resultType="WorkAttence" >
+		SELECT 
+			a.spec_id AS  "specId",
+			s.name  AS  "specName",
+			SUM(a.work_time)   AS "workTime", 
+			SUM(a.over_time)  AS "overTime",
+			a.work_date  AS  "workDate"
+		FROM pm_work_attence a
+		LEFT JOIN pm_project   p  on a.pro_id=p.id
+		LEFT JOIN pm_specialty s  on a.spec_id=s.id
+		LEFT JOIN sys_user     u  on u.id=a.create_by
+		where a.work_date >=#{start}	
+		and   a.work_date  &lt;= #{end} 
+	    and   a.create_by=#{userId} 
+		GROUP BY a.spec_id ,a.work_date,s.`name`, s.sort  ORDER BY s.sort 
+	</select> -->
+	
+	<select id="findList" resultType="WorkAttence" >
+		SELECT 
+			<include refid="workAttenceColumns"/>
+		FROM pm_work_attence a
+		<include refid="workAttenceJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+			<if test="proId != null and proId != ''">
+				AND a.pro_id = #{proId}
+			</if>
+			<if test="specId != null and specId != ''">
+				AND a.spec_id = #{specId}
+			</if>
+			<if test="workTime != null and workTime != ''">
+				AND a.work_time = #{workTime}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<!-- 工日统计汇总  -->
+	<select id="findLists" resultType="WorkAttence" >
+		select 
+			user.name AS "user.name",
+			pro.num AS "proNum",
+			pro.name AS "proName",
+			sum(workAttence.work_time) AS "workTime",
+			sum(workAttence.over_time) AS "overTime"
+		from pm_work_attence workAttence
+		left join sys_user user on user.id = workAttence.create_by
+		left join pm_project pro on workAttence.pro_id = pro.id
+		<where>
+			workAttence.del_flag = 0
+			${dataScope}
+			<if test="workDateStart != null and workDateStart != ''">
+				and date_format(workAttence.work_date,'%Y%m') >= date_format(#{workDateStart},'%Y%m')
+			</if>
+			<if test="workDateEnd != null and workDateEnd != ''">
+				and date_format(workAttence.work_date,'%Y%m') &lt;= date_format(#{workDateEnd},'%Y%m')
+			</if>
+			<if test="(workDateStart == null or workDateStart == '') and (workDateEnd == null or workDateEnd == '')">
+				and date_format(workAttence.work_date,'%Y') = date_format(now(),'%Y')
+			</if>
+			<if test="user != null and user.name != null and user.name != ''">
+				and user.name LIKE 
+					<if test="dbName == 'oracle'">'%'||#{user.name}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{user.name}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{user.name},'%')</if> 
+			</if>
+			<if test="proNum != null and proNum != ''">
+				and pro.num LIKE 
+					<if test="dbName == 'oracle'">'%'||#{proNum}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{proNum}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{proNum},'%')</if> 
+			</if>
+			<if test="proName != null and proName != ''">
+				and pro.name LIKE 
+					<if test="dbName == 'oracle'">'%'||#{proName}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{proName}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{proName},'%')</if> 
+			
+			</if>
+		</where> 
+		group by pro.create_date desc,workAttence.pro_id,workAttence.create_by
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY pro.id,workAttence.create_by
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="WorkAttence" >
+		SELECT 
+			<include refid="workAttenceColumns"/>
+		FROM pm_work_attence a
+		<include refid="workAttenceJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO pm_work_attence(
+			id,
+			pro_id,
+			spec_id,
+			work_time,
+			over_time,
+			work_date,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag,
+			is_trip,
+			item_type
+		) VALUES (
+			#{id},
+			#{project.id},
+			#{specialty.id},
+			#{workTime},
+			#{overTime},
+			#{workDate},
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{remarks},
+			#{delFlag},
+			#{isTrip},
+			#{itemType}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE pm_work_attence SET 	
+			pro_id = #{project.id},
+			spec_id = #{specialty.id},
+			work_time = #{workTime},
+			over_time = #{overTime},
+			work_date = #{workDate},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			del_flag=#{delFlag},
+			remarks = #{remarks},
+			is_trip=#{isTrip},
+			item_type=#{itemType}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM pm_work_attence
+		WHERE id = #{id}
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE pm_work_attence SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="WorkAttence" statementType="STATEMENT">
+		select * FROM pm_work_attence  where ${propertyName} = '${value}'
+	</select>
+	
+	
+	
+	
+	<select id="findAllProAttence" resultType="WorkAttence" statementType="STATEMENT">
+	select   	
+	pro_id AS "proId",
+		sum(work_time) AS "sumWorkTime",
+		sum(work_time) AS "sumOverTime"
+		from    pm_work_attence   group  by   pro_id	
+	</select>
+	
+	
+	
+	
+	<select id="findProWorkNumList" resultType="ProWorkSum" >
+	select  pp.name   AS "pro.name",
+		pp.pro_shortened   AS "pro.proShortened",
+		pp.id AS "id",
+		pp.num   AS    "pro.num",
+		pp.type    AS "pro.type",
+		pp.design_type    AS "pro.designType", 
+		pp.id   AS  "pro.id",
+		IFNULL(SUM(work_time),0) AS "sumWorkTime",
+		IFNULL(SUM(over_time),0) AS "sumOverTime",
+
+
+		group_concat(DISTINCT superUser. NAME) AS "supervisor",
+		group_concat(DISTINCT princiUser. NAME) AS "principal",
+		(select value.sort from sys_dict_type type
+			left join sys_dict_value value on type.id = value.dict_type_id
+			where type.type = 'pro_type'
+			and type.del_flag = '0'
+			and value.del_flag = '0'
+			and value.value = pp.type
+		) AS "sort"
+	from pm_work_attence a   
+	left join pm_project  pp on a.pro_id=pp.id 
+	LEFT JOIN pm_principal princi ON princi.pro_id = pp.id
+	LEFT JOIN sys_user princiUser ON princiUser.id = princi.user_id
+	LEFT JOIN pm_supervisor super ON super.pro_id = pp.id
+	LEFT JOIN sys_user superUser ON superUser.id = super.user_id
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			and a.pro_id is not null
+			and a.pro_id != ''
+			${dataScope}
+			<if test="proNum != null and proNum != ''">
+				AND pp.num like concat('%',#{proNum},'%')
+			</if>
+			<if test="proName != null and proName != ''">
+				AND pp.name like concat('%',#{proName},'%')
+			</if>
+			<if test="proShortened != null and proShortened != ''">
+				AND pp.pro_shortened like concat('%',#{proShortened},'%')
+			</if>
+			<if test="(start == null or start == '') and (end == null or end == '')">
+				AND date_format(a.work_date,'%Y') = date_format(now(),'%Y')
+			</if>
+			<if test="start != null and start != ''">
+				AND date_format(a.work_date,'%Y%m') >= date_format(#{start},'%Y%m')
+			</if>
+			<if test="end != null and end != ''">
+				AND date_format(a.work_date,'%Y%m') &lt;= date_format(#{end},'%Y%m')
+			</if>
+		</where>
+		 GROUP BY a.pro_id  
+		 having (IFNULL(SUM(work_time),0) != 0 or IFNULL(SUM(over_time),0) != 0)
+		<if test="supervisor != null and supervisor != ''">
+			and group_concat(distinct superUser.name) like 
+				<if test="dbName == 'oracle'">'%'||#{supervisor}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{supervisor}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{supervisor},'%')</if>
+		</if>
+		<if test="principal != null and principal != ''">
+			and group_concat(distinct princiUser.name) like
+				<if test="dbName == 'oracle'">'%'||#{principal}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{principal}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{principal},'%')</if>
+		</if>
+		 order by sort,pp.num
+	<!-- <choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>  -->
+	</select>
+	
+	<!-- 查找总工日和总工时 -->
+	<select id="getSumtime" parameterType="ProWorkSum" resultType="java.util.HashMap" >
+	select  
+		IFNULL(SUM(work_time),0) AS "sumWorkTime",
+		IFNULL(SUM(over_time),0) AS "sumOverTime",
+
+        IFNULL(SUM(work_time),0)+ ROUND(IFNULL(sum(over_time),0)/7,1) AS "overTimeDay"
+	from pm_work_attence a   
+	left join pm_project  pp on a.pro_id=pp.id
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			and a.pro_id is not null
+			and a.pro_id != ''
+			and a.pro_id = #{pro.id}
+			<if test="(start == null or start == '') and (end == null or end == '')">
+				AND date_format(a.work_date,'%Y') = date_format(now(),'%Y')
+			</if>
+			<if test="start != null and start != ''">
+				AND date_format(a.work_date,'%Y%m') >= date_format(#{start},'%Y%m')
+			</if>
+			<if test="end != null and end != ''">
+				AND date_format(a.work_date,'%Y%m') &lt;= date_format(#{end},'%Y%m')
+			</if>
+		</where>
+		 GROUP BY a.pro_id  
+		 having (IFNULL(SUM(work_time),0) != 0 or IFNULL(SUM(over_time),0) != 0)
+	</select>
+	
+	<!-- 个人项目工日汇总 -->
+	<select id="findProPersonWorkNumList" resultType="ProWorkSum" >
+	select  pp.name   AS "pro.name",
+	pp.num   AS    "pro.num",
+	pp.design_type    AS "pro.designType", 
+	pp.id   AS  "pro.id",
+	<!-- SUM(work_time) AS "sumWorkTime",
+	SUM(over_time) AS "sumOverTime", -->
+	u.`name`  AS "pro.principal.name",
+	a.create_by AS "user.id",
+	`user`.name AS "user.name"
+	from pm_work_attence a   left join pm_project  pp on a.pro_id=pp.id 
+	LEFT join sys_user   u  on u.id=pp.principal
+	left join sys_user user on USER.id = a.create_by
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			and a.pro_id is not null
+			and a.pro_id != ''
+			${dataScope}
+			<if test="proNum != null and proNum != ''">
+				AND pp.num like concat('%',#{proNum},'%')
+			</if>
+			<if test="proName != null and proName != ''">
+				AND pp.name like concat('%',#{proName},'%')
+			</if>
+			<if test="user != null and user.name != null and user.name != ''">
+				AND user.name like concat('%',#{user.name},'%')
+			</if>
+			<if test="start == null  and end ==null">
+				AND date_format(a.work_date,'%Y%m') = date_format(now(),'%Y%m')
+			</if>
+			<if test="start != null and start != ''">
+				AND date_format(a.work_date,'%Y%m') >= date_format(#{start},'%Y%m')
+			</if>
+			<if test="end != null and end != ''">
+				AND date_format(a.work_date,'%Y%m') &lt;= date_format(#{end},'%Y%m')
+			</if>
+		</where>
+		 GROUP BY a.pro_id,a.create_by
+		 order by a.create_by,a.pro_id
+	</select>
+	
+	
+	
+	
+	<select id="getProSpecSum" resultType="java.util.HashMap"  >
+		SELECT  IFNULL(sum(work_time),0)  AS "work", IFNULL(sum(over_time),0)  AS "over",
+
+        IFNULL(sum(work_time),0)+  ROUND(IFNULL(sum(over_time),0)/7,1) AS "ovday"
+		FROM
+		pm_work_attence a
+		where a.pro_id=#{proId}  and a.spec_id=#{specId}
+			<if test="start == null  and end ==null">
+				AND date_format(a.work_date,'%Y') = date_format(now(),'%Y')
+			</if>
+			<if test="start != null and start != ''">
+				AND date_format(a.work_date,'%Y%m') >= date_format(#{start},'%Y%m')
+			</if>
+			<if test="end != null and end != ''">
+				AND date_format(a.work_date,'%Y%m') &lt;= date_format(#{end},'%Y%m')
+			</if>
+		
+	</select>
+	
+	<select id="getProPersonSpecSum" resultType="java.util.HashMap"  >
+		SELECT  IFNULL(sum(work_time),0)  AS "work", IFNULL(sum(over_time),0)  AS "over"
+		FROM
+		pm_work_attence a
+		where a.pro_id=#{proId}  and a.spec_id=#{specId} and a.create_by = #{specUserId}
+			<if test="start == null  and end ==null">
+				AND date_format(a.work_date,'%Y%m') = date_format(now(),'%Y%m')
+			</if>
+			<if test="start != null and start != ''">
+				AND date_format(a.work_date,'%Y%m') >= date_format(#{start},'%Y%m')
+			</if>
+			<if test="end != null and end != ''">
+				AND date_format(a.work_date,'%Y%m') &lt;= date_format(#{end},'%Y%m')
+			</if>
+	</select>
+	
+	<select id="getProStatusAndEndTime" resultType="java.util.HashMap"  >
+		select  state, date_format(update_date,'%Y%m%d') AS "end"    from   pm_project where  id=#{proId}
+	</select>
+	
+	
+	
+	<select id="getAttenceRecent" resultType="java.util.Date" >
+		SELECT  DISTINCT(work_date)   from pm_work_attence  
+		where work_date >=#{start} and  work_date &lt;=#{end}  and  create_by=#{userId}
+	</select>
+	
+	
+	
+	
+	
+	
+		<!-- 获取用户的日程记录 -->
+	<select id="getUserRecordByDateNo" resultType="WorkAttence" >
+		SELECT 
+			<include refid="workAttenceColumns"/>
+		FROM pm_work_attence a
+		<include refid="workAttenceJoins"/>
+		WHERE a.create_by = #{userId}   and  date_format(a.work_date,'%Y-%m-%d')=#{dateStr}
+	</select>
+	
+	
+	
+	
+			<!-- 获取用户的日程记录 -->
+	<select id="getLateDay" resultType="Date" >
+		SELECT 
+			     Ifnull(max(work_date),now())
+		FROM pm_work_attence a
+		
+		WHERE a.create_by = #{userId}   and  a.work_date &lt;=#{date}
+		
+			</select>
+	
+	<!-- 查看项目工日汇总详情 -->
+	<select id="findWorkAttence" parameterType="String" resultType="ProWorkSum" >
+		select
+			IFNULL(SUM(work_time),0) AS "sumWorkTime",
+			IFNULL(SUM(over_time),0) AS "sumOverTime",
+			user.name AS "user.name"
+		from pm_work_attence a 
+		left join sys_user user on user.id = a.create_by
+		<where>
+			a.del_flag = '0'
+			and a.pro_id is not null
+			and a.pro_id != ''
+			and a.pro_id = #{proId}
+			<if test="(start == null or start == '') and (end == null or end == '')">
+				AND date_format(a.work_date,'%Y') = date_format(now(),'%Y')
+			</if>
+			<if test="start != null and start != ''">
+				AND date_format(a.work_date,'%Y%m') >= date_format(#{start},'%Y%m')
+			</if>
+			<if test="end != null and end != ''">
+				AND date_format(a.work_date,'%Y%m') &lt;= date_format(#{end},'%Y%m')
+			</if>
+		</where>
+		 GROUP BY a.pro_id,a.create_by
+	</select>
+	
+	
+	
+		<select id="getRecord369" resultType="Integer" >
+		SELECT  count(1) from  pm_work_attence  where   create_by= #{userId}   and  work_date =#{date369}
+	</select>
+</mapper>

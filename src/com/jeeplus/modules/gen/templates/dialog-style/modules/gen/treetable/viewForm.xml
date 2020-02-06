@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<template>
+	<name>viewForm</name>
+	<filePath>src/main/webapp/webpage/${lastPackageName}/${moduleName}/${subModuleName}</filePath>
+	<fileName>${className}Form.jsp</fileName>
+	<content><![CDATA[
+<%@ page contentType="text/html;charset=UTF-8" %>
+<%@ include file="/webpage/include/taglib.jsp"%>
+<html>
+<head>
+	<title>${functionNameSimple}管理</title>
+	<meta name="decorator" content="ani"/>
+	<#list table.columnList as c>
+		<#if c.isForm?? && c.isForm == "1" && (c.isNotBaseField || c.simpleJavaField == 'remarks')>
+			<#if c.showType == "umeditor">
+	<!-- SUMMERNOTE -->
+	<%@include file="/webpage/include/summernote.jsp" %>
+			 <#break/>
+			</#if>
+		</#if>
+	</#list>
+	<script type="text/javascript">
+		var validateForm;
+		var $${className}TreeTable; // 父页面table表格id
+		var $topIndex;//openDialog的 dialog index
+		function doSubmit(treeTable, index){//回调函数，在编辑和保存动作时，供openDialog调用提交表单。
+		  if(validateForm.form()){
+			  $${className}TreeTable = treeTable;
+			  $topIndex = index;
+			  jp.loading();
+			  $("#inputForm").submit();
+			  return true;
+		  }
+	
+		  return false;
+		}
+		$(document).ready(function() {
+			validateForm = $("#inputForm").validate({
+				submitHandler: function(form){
+			<#list table.columnList as c>
+				<#if c.isForm?? && c.isForm == "1" && (c.isNotBaseField || c.simpleJavaField == 'remarks')>
+				<#if c.showType == "umeditor">
+					$("input[name='${c.javaFieldId}']").val($('#${c.javaFieldId}').summernote('code'));//取富文本的值
+				</#if>
+				</#if>
+			</#list>
+						jp.post("${r"${ctx}"}/${urlPrefix}/save",$('#inputForm').serialize(),function(data){
+		                    if(data.success){
+		                    	var current_id = data.body.${className}.id;
+		                    	var target = $${className}TreeTable.get(current_id);
+		                    	var old_parent_id = target.attr("pid") == undefined?'1':target.attr("pid");
+		                    	var current_parent_id = data.body.${className}.parentId;
+		                    	var current_parent_ids = data.body.${className}.parentIds;
+		                    	
+		                    	if(old_parent_id == current_parent_id){
+		                    		if(current_parent_id == '0'){
+		                    			$${className}TreeTable.refreshPoint(-1);
+		                    		}else{
+		                    			$${className}TreeTable.refreshPoint(current_parent_id);
+		                    		}
+		                    	}else{
+		                    		$${className}TreeTable.del(current_id);//刷新删除旧节点
+		                    		$${className}TreeTable.initParents(current_parent_ids, "0");
+		                    	}
+		                    	
+		                    	jp.success(data.msg);
+		                    }else {
+	            	  			jp.error(data.msg);
+		                    }
+		                    
+		                        jp.close($topIndex);//关闭dialog
+		            });;
+				},
+				errorContainer: "#messageBox",
+				errorPlacement: function(error, element) {
+					$("#messageBox").text("输入有误，请先更正。");
+					if (element.is(":checkbox")||element.is(":radio")||element.parent().is(".input-append")){
+						error.appendTo(element.parent().parent());
+					} else {
+						error.insertAfter(element);
+					}
+				}
+			});
+			
+			<#list table.columnList as c>
+				<#if c.isForm?? && c.isForm == "1" && (c.isNotBaseField || c.simpleJavaField == 'remarks')>
+				<#if c.showType == "dateselect">
+	        $('#${c.javaFieldId}').datetimepicker({
+				 format: "YYYY-MM-DD HH:mm:ss"
+		    });
+				</#if>
+				<#if c.showType == "umeditor">
+				//富文本初始化
+			$('#${c.javaFieldId}').summernote({
+				height: 300,                
+                lang: 'zh-CN'
+            });
+				</#if>
+				</#if>
+			</#list>
+		});
+	</script>
+</head>
+<body class="bg-white">
+		<form:form id="inputForm" modelAttribute="${className}" method="post" class="form-horizontal">
+		<form:hidden path="id"/>
+		<sys:message content="${r"${message}"}"/>
+		<table class="table table-bordered">
+		   <tbody>
+		<#assign x=0 />
+		<#list table.columnList as c>
+			<#if c.simpleJavaField == 'parent'>
+			<#assign x=x+1 />
+			<#if x%2==1> 
+				<tr>
+			</#if>
+					<td class="width-15 active"><label class="pull-right"><#if c.isNull != "1"><font color="red">*</font></#if>${c.comments}：</label></td>
+					<td class="width-35">
+						<sys:treeselect id="${c.simpleJavaField}" name="${c.javaFieldId}" value="${"$"}{${className}.${c.javaFieldId}}" labelName="${c.javaFieldName}" labelValue="${"$"}{${className}.${c.javaFieldName}}"
+						title="${c.comments}" url="/${urlPrefix}/treeData" extId="${'$'}{${className}.id}" cssClass="form-control <#if c.isNull != "1">required</#if>" allowClear="true"/>
+					</td>
+			<#elseif c.isForm?? && c.isForm == "1" && (c.isNotBaseField || c.simpleJavaField == 'remarks')>
+			<#assign x=x+1 />
+			<#if x%2==1> 
+				<tr>
+			</#if>
+					<td class="width-15 active"><label class="pull-right"><#if c.isNull != "1"><font color="red">*</font></#if>${c.comments}：</label></td>
+					<td class="width-35">
+			<#if c.showType == "input">
+						<form:input path="${c.javaFieldId}" htmlEscape="false"<#if c.maxLength?? && c.maxLength != ""> maxlength="${c.maxLength}"</#if> <#if  c.minLength?? && c.minLength != ""> minlength="${c.minLength}"</#if> <#if c.maxValue?? && c.maxValue != ""> max="${c.maxValue}"</#if> <#if c.minValue?? && c.minValue != ""> min="${c.minValue}"</#if> class="form-control <#if c.isNull != "1">required</#if><#if c.validateType?? && c.validateType != ""><#if c.validateType != "string"> ${c.validateType}</#if></#if>"/>
+			<#elseif c.showType == "textarea">
+						<form:textarea path="${c.javaFieldId}" htmlEscape="false" rows="4"<#if c.maxLength?? && c.maxLength != ""> maxlength="${c.maxLength}"</#if> <#if c.minLength?? && c.minLength != ""> minlength="${c.minLength}"</#if> <#if c.maxValue?? && c.maxValue != ""> max="${c.maxValue}"</#if> <#if c.minValue?? && c.minValue != ""> min="${c.minValue}"</#if> class="form-control <#if c.isNull != "1">required</#if><#if c.validateType?? && c.validateType != ""><#if c.validateType != "string"> ${c.validateType}</#if></#if>"/>
+			<#elseif c.showType == "select">
+						<form:select path="${c.javaFieldId}" class="form-control <#if c.isNull != "1">required</#if>">
+							<form:option value="" label=""/>
+							<form:options items="${"$"}{fns:getDictList('${c.dictType}')}" itemLabel="label" itemValue="value" htmlEscape="false"/>
+						</form:select>
+			<#elseif c.showType == "checkbox">
+						<sys:checkbox id="${c.javaFieldId}" name="${c.javaFieldId}" items="${"$"}{fns:getDictList('${c.dictType}')}" values="${"$"}{${className}.${c.javaFieldId}}" cssClass="i-checks <#if c.isNull != "1">required</#if>"/>
+			<#elseif c.showType == "radiobox">
+						<form:radiobuttons path="${c.javaFieldId}" items="${"$"}{fns:getDictList('${c.dictType}')}" itemLabel="label" itemValue="value" htmlEscape="false" class="i-checks <#if c.isNull != "1">required</#if>"/>
+			<#elseif c.showType == "dateselect">
+						<p class="input-group">
+							<div class='input-group form_datetime' id='${c.javaFieldId}'>
+			                    <input type='text'  name="${c.javaFieldId}" class="form-control"  value="<fmt:formatDate value="${"$"}{${className}.${c.javaFieldId}}" pattern="yyyy-MM-dd HH:mm:ss"/>"/>
+			                    <span class="input-group-addon">
+			                        <span class="glyphicon glyphicon-calendar"></span>
+			                    </span>
+			                </div>						            
+			            </p>
+			<#elseif c.showType == "userselect">
+						<sys:userselect id="${c.simpleJavaField}" name="${c.javaFieldId}" value="${"$"}{${className}.${c.javaFieldId}}" labelName="${c.javaFieldName}" labelValue="${"$"}{${className}.${c.javaFieldName}}"
+							    cssClass="form-control <#if c.isNull != "1">required</#if>"/>
+			<#elseif c.showType == "officeselect">
+						<sys:treeselect id="${c.simpleJavaField}" name="${c.javaFieldId}" value="${"$"}{${className}.${c.javaFieldId}}" labelName="${c.javaFieldName}" labelValue="${"$"}{${className}.${c.javaFieldName}}"
+							title="部门" url="/sys/office/treeData?type=2" cssClass="form-control <#if c.isNull != "1">required</#if>" allowClear="true" notAllowSelectParent="true"/>
+			<#elseif c.showType == "areaselect">
+						<sys:treeselect id="${c.simpleJavaField}" name="${c.javaFieldId}" value="${"$"}{${className}.${c.javaFieldId}}" labelName="${c.javaFieldName}" labelValue="${"$"}{${className}.${c.javaFieldName}}"
+							title="区域" url="/sys/area/treeData" cssClass="form-control <#if c.isNull != "1">required</#if>" allowClear="true" notAllowSelectParent="true"/>
+			<#elseif c.showType == "cityselect">
+				<div class=" input-group" style=" width: 100%;">
+				  	<form:input path="${c.javaFieldId}" htmlEscape="false" data-toggle="city-picker" style="height: 34px;font-size: 14px;"/>
+				 </div>
+			<#elseif c.showType == "fileselect">
+						<form:hidden id="${c.simpleJavaField}" path="${c.javaFieldId}" htmlEscape="false"<#if c.dataLength != "0"> maxlength="${c.dataLength}"</#if> class="form-control"/>
+						<sys:ckfinder input="${c.simpleJavaField}" type="files" uploadPath="/${moduleName}<#if subModuleName != "">/${subModuleName}</#if>/${className}" selectMultiple="true"/>
+			<#elseif c.showType == "treeselect">
+						<sys:treeselect id="${c.simpleJavaField}" name="${c.javaFieldId}" value="${"$"}{${className}.${c.javaFieldId}}" labelName="${c.javaFieldName}" labelValue="${"$"}{${className}.${c.javaFieldName}}"
+							title="${c.comments}" url="${c.dataUrl}" extId="${'$'}{${className}.id}" cssClass="form-control <#if c.isNull != "1">required</#if>" allowClear="true"/>
+			<#elseif c.showType == "gridselect">
+						<sys:gridselect url="${r"${ctx}"}${c.dataUrl}" id="${c.simpleJavaField}" name="${c.javaFieldId}" value="${"$"}{${className}.${c.javaFieldId}}" labelName="${c.javaFieldName}" labelValue="${"$"}{${className}.${c.javaFieldName}}"
+							 title="选择${c.comments}" cssClass="form-control required" fieldLabels="${c.fieldLabels}" fieldKeys="${c.fieldKeys}" searchLabels="${c.searchLabel}" searchKeys="${c.searchKey}" ></sys:gridselect>
+			<#elseif c.showType == "umeditor">
+                        <input type="hidden" name="${c.javaFieldId}"/>
+						<div id="${c.javaFieldId}">
+                          ${"$"}{fns:unescapeHtml(${className}.${c.javaFieldId})}
+                        </div>
+			</#if>
+					</td>
+			<#if x%2==0> 
+				</tr>
+			</#if>
+			</#if>
+		</#list>
+			<#if x%2==1 > 
+					<td class="width-15 active"></td>
+		   			<td class="width-35" ></td>
+		  		</tr>
+		</#if>
+		 	</tbody>
+		</table>
+		</form:form>
+</body>
+</html>]]>
+	</content>
+</template>
